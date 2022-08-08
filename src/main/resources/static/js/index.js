@@ -4,7 +4,8 @@ const typeSelectBoxListLis = typeSelectBoxList.querySelectorAll("li");
 const todoContentList = document.querySelector(".todo-content-list");
 const sectionBoby = document.querySelector(".section-body");
 const incompleteCountNumber = document.querySelector(".incomplete-count-number");
-
+const modalContainer = document.querySelector(".modal-container");
+const todoAddButton = document.querySelector(".todo-add-button");
 /*
 	게시글 불러오기
 	
@@ -261,6 +262,56 @@ for(let i = 0; i < typeSelectBoxListLis.length; i++){
 	
 }
 
+todoAddButton.onclick = () => {
+	modalContainer.classList.toggle("modal-visible");
+	todoContentList.style.overflow = "hidden";
+	setModalEvent();
+}
+
+function clearModalTodoInputValue(modalTodoInput) {
+	modalTodoInput.value = "";
+}
+
+function uncheckedImportance(importanceFlag) {
+	importanceFlag.checked = false;
+}
+
+function setModalEvent() {
+	const modalCloseButton = modalContainer.querySelector(".modal-close-button");
+	const importanceFlag = modalContainer.querySelector(".importance-check");
+	const modalTodoInput = modalContainer.querySelector(".modal-todo-input");
+	const modalCommitButton = modalContainer.querySelector(".modal-commit-button");
+
+	modalContainer.onclick = (e) => {
+		if(e.target == modalContainer){
+			modalCloseButton.click();
+		}
+	}
+
+	modalCloseButton.onclick = () => {
+		modalContainer.classList.toggle("modal-visible");
+		todoContentList.style.overflow = "auto";
+		uncheckedImportance(importanceFlag);
+		clearModalTodoInputValue(modalTodoInput);
+	}
+	
+	modalTodoInput.onkeyup = () => {
+		if(window.event.keyCode == 13){
+			modalCommitButton.click();
+		}
+	}
+
+	modalCommitButton.onclick = () => {
+		data = {
+			importance: importanceFlag.checked,
+			todo: modalTodoInput.value
+		}
+		addTodo(data);
+		modalCloseButton.click();
+	}
+
+}
+
 ///////////////////////////////////////////<<< REQUEST >>>//////////////////////////////////////////////////
 
 function load() {
@@ -321,8 +372,6 @@ function updateStatus(type, todoCode) {
 	return result;
 }
 
-
-
 function deleteTodo(todoContent, todoCode) {
 	$.ajax({
 		type: "delete",
@@ -338,135 +387,18 @@ function deleteTodo(todoContent, todoCode) {
 	})
 }
 
-function errorMessage(request, status, error) {
-	alert("요청 실패");
-	console.log(request.status);
-	console.log(request.responseText);
-	console.log(error);
-}		load();
-	}
-}
-
-
-selectedTypeButton.onclick = () => {
-    typeSelectBoxList.classList.toggle("visible");
-}
-
-function resetPage() {
-	page = 1;
-}
-
-function removeAllclassList(elements, className) {
-	for(let of elements){
-			elements.classList.remove(className);
-		}
-}
-
-function setListType(selectedType) {
-	listType = selectedType.toLowerCase();
-}
-
-function clearTodoContentList() {
-	todoContentList.innerHTML = "";
-}
-
-for(let i = 0; i < typeSelectBoxListLis.length; i++){
-	
-	typeSelectBoxListLis[i].onclick = () => {
-		
-		resetPage();
-		
-		removeAllclassList(typeSelectBoxListLis, "type-selected");
-		
-		typeSelectBoxListLis[i].classList.add("type-selected");
-		
-		setListType(typeSelectBoxListLis[i].textContent);
-		
-		const selectedType = document.querySelector(".selected-type");
-		
-		selectedType.textContent = typeSelectBoxListLis[i].textContent;
-		
-		clearTodoContentList()
-		
-		load();
-		
-		typeSelectBoxList.classList.toggle("visible");
-		
-	}
-	
-}
-
-////////////////////////////< Request >///////////////////////////////
-
-function load() {
+function addTodo(data) {
 	$.ajax({
-		type: "get",
-		url: `/api/v1/todolist/list/${listType}`,
-		data: {
-			"page": page,
-			contentCount: 20
-		},
-		dataType: "json",
-		success: (response) => {
-			const todoList = response.data;
-			
-			setTotalPage(todoList[0].totalCount);
-			setIncompleteCount(todoList[0].incompleteCount);
-			createList(todoList);
-		},
-		error: errorMessage
-		
-	})
-}
-
-
-function updateTodoContent(todoCode, todo) {
-	let successFlag = false; 
-	
-	$.ajax({
-			type: "put",
-			url: `/api/v1/todolist/todo/${todoCode}`,
-			contentType: "application/json",
-			data: JSON.stringify({
-				"todoCode": todoCode,
-				"todo": todo
-				}),
-			async: false,
-			dataType: "json",
-			success: (response) => {
-				successFlag = response.data;
-			},
-			error: errorMessage
-		})
-		return successFlag;
-}
-
-function updateStatus(type, todoCode) {
-	result = false;
-	
-	$.ajax({
-		type: "put",
-		url: `/api/v1/todolist/${type}/todo/${todoCode}`,
-		async: false,
-		dataType: "json",
-		success: (response) => {
-			result = response.data
-			
-		},
-		error: errorMessage
-	})
-	return result;
-}
-
-function deleteTodo(todoContent, todoCode) {
-	$.ajax({
-		type: "delete",
-		url: `/api/v1/todolist/todo/${todoCode}`,
+		type: "post",
+		url: "/api/v1/todolist/todo",
+		contentType: "application/json",
+		data: JSON.stringify(data),
 		async: false,
 		dataType: "json",
 		success: (response) => {
 			if(response.data){
-				todoContentList.removeChild(todoContent);
+				clearTodoContentList();
+				load();
 			}
 		},
 		error: errorMessage
@@ -479,5 +411,7 @@ function errorMessage(request, status, error) {
 	console.log(request.responseText);
 	console.log(error);
 }
+
+
 
 
